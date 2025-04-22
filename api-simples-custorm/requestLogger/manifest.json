@@ -1,7 +1,11 @@
 {
     "name": "Request Logger",
     "version": "1.0",
-    "permissions": ["webRequest"],
+    "permissions": [
+        "webRequest",
+        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess"
+    ],
     "host_permissions": ["<all_urls>"],
     "background": {
       "service_worker": "background.js"

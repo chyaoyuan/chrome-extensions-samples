@@ -1,5 +1,75 @@
 // 在Manifest V3中监听请求并记录日志
 
+
+const declarativeNetRequestRules = [
+  {
+      'id': 2,
+      'priority': 1,
+      'action': {
+          'type': 'modifyHeaders',
+          'requestHeaders': [
+              {'header': 'origin', 'operation': 'set', 'value': 'https://liepin.com'},
+              {'header': 'referer', 'operation': 'set', 'value': 'https://liepin.com'},
+          ]
+      },
+      'condition': {
+          'urlFilter': '*liepin.com/*',
+          'resourceTypes': ['main_frame', 'xmlhttprequest', 'media', 'sub_frame'],
+          'tabIds': [-1]
+      }
+  },
+  {
+    'id': 3,
+    'priority': 1,
+    'action': {
+        'type': 'modifyHeaders',
+        'requestHeaders': [
+            {'header': 'origin', 'operation': 'set', 'value': 'https://h.liepin.com'},
+            {'header': 'referer', 'operation': 'set', 'value': 'https://h.liepin.com'},
+        ]
+    },
+    'condition': {
+        'urlFilter': '*monitor.liepin.com/*',
+        'resourceTypes': ['main_frame', 'xmlhttprequest', 'media', 'sub_frame'],
+        'tabIds': [-1]
+    }
+},
+{
+  'id': 4,
+  'priority': 1,
+  'action': {
+      'type': 'modifyHeaders',
+      'requestHeaders': [
+          {'header': 'referer', 'operation': 'set', 'value': 'https://easy.lagou.com/im/chat/index.htm?'},
+      ]
+  },
+  'condition': {
+    'urlFilter': 'easy.lagou.com/search/*', 'resourceTypes': ['xmlhttprequest'], 
+  'tabIds': [-1]}
+}
+];
+
+// 安装规则
+async function updateRules() {
+  try {
+    // 先移除所有现有会话规则
+    const existingRules = await chrome.declarativeNetRequest.getSessionRules();
+    const existingRuleIds = existingRules.map(rule => rule.id);
+    
+    // 更新会话规则
+    await chrome.declarativeNetRequest.updateSessionRules(
+      declarativeNetRequestRules
+    );
+    
+    console.log('会话规则安装成功！');
+  } catch (error) {
+    console.error('安装会话规则失败:', error);
+  }
+}
+
+// 在插件启动时安装规则
+updateRules();
+
 // 存储请求信息的对象以便重放
 const requestsToReplay = new Map();
 
@@ -113,13 +183,19 @@ async function replayRequest(requestId) {
   
   try {
     // 准备请求配置
+    const headers = { ...requestInfo.headers } || {};
+    // 删除 Origin 头，让浏览器自动处理
+    delete headers['origin'];
+    delete headers['Origin'];
+    
     const fetchOptions = {
       method: requestInfo.method,
-      headers: requestInfo.headers || {},
+      headers: headers,
       credentials: 'include', // 包含cookie
       mode: 'cors',          // 尝试跨域请求
       cache: 'no-cache',     // 不使用缓存
-      redirect: 'follow'     // 自动跟随重定向
+      redirect: 'follow',    // 自动跟随重定向
+      referrerPolicy: 'no-referrer' // 不发送 origin
     };
     
     // 添加请求体
