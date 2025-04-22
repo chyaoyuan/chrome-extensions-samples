@@ -8,45 +8,46 @@ const declarativeNetRequestRules = [
       'action': {
           'type': 'modifyHeaders',
           'requestHeaders': [
-              {'header': 'origin', 'operation': 'set', 'value': 'https://liepin.com'},
-              {'header': 'referer', 'operation': 'set', 'value': 'https://liepin.com'},
+              {'header': 'origin', 'operation': 'set', 'value': 'https://ehire.51job.com'},
+              {'header': 'referer', 'operation': 'set', 'value': 'https://ehire.51job.com/'},
           ]
       },
       'condition': {
-          'urlFilter': '*liepin.com/*',
+          'urlFilter': '*cupid.51job.com/imchat/open/ehire/chat/resumeDetail*',
           'resourceTypes': ['main_frame', 'xmlhttprequest', 'media', 'sub_frame'],
           'tabIds': [-1]
       }
-  },
-  {
-    'id': 3,
-    'priority': 1,
-    'action': {
-        'type': 'modifyHeaders',
-        'requestHeaders': [
-            {'header': 'origin', 'operation': 'set', 'value': 'https://h.liepin.com'},
-            {'header': 'referer', 'operation': 'set', 'value': 'https://h.liepin.com'},
-        ]
-    },
-    'condition': {
-        'urlFilter': '*monitor.liepin.com/*',
-        'resourceTypes': ['main_frame', 'xmlhttprequest', 'media', 'sub_frame'],
-        'tabIds': [-1]
-    }
-},
-{
-  'id': 4,
-  'priority': 1,
-  'action': {
-      'type': 'modifyHeaders',
-      'requestHeaders': [
-          {'header': 'referer', 'operation': 'set', 'value': 'https://easy.lagou.com/im/chat/index.htm?'},
-      ]
-  },
-  'condition': {
-    'urlFilter': 'easy.lagou.com/search/*', 'resourceTypes': ['xmlhttprequest'], 
-  'tabIds': [-1]}
-}
+  }
+  ,
+//   {
+//     'id': 3,
+//     'priority': 1,
+//     'action': {
+//         'type': 'modifyHeaders',
+//         'requestHeaders': [
+//             {'header': 'origin', 'operation': 'set', 'value': 'https://h.liepin.com'},
+//             {'header': 'referer', 'operation': 'set', 'value': 'https://h.liepin.com'},
+//         ]
+//     },
+//     'condition': {
+//         'urlFilter': '*monitor.liepin.com/*',
+//         'resourceTypes': ['main_frame', 'xmlhttprequest', 'media', 'sub_frame'],
+//         'tabIds': [-1]
+//     }
+// },
+// {
+//   'id': 4,
+//   'priority': 1,
+//   'action': {
+//       'type': 'modifyHeaders',
+//       'requestHeaders': [
+//           {'header': 'referer', 'operation': 'set', 'value': 'https://easy.lagou.com/im/chat/index.htm?'},
+//       ]
+//   },
+//   'condition': {
+//     'urlFilter': 'easy.lagou.com/search/*', 'resourceTypes': ['xmlhttprequest'], 
+//   'tabIds': [-1]}
+// }
 ];
 
 // 安装规则
@@ -56,14 +57,22 @@ async function updateRules() {
     const existingRules = await chrome.declarativeNetRequest.getSessionRules();
     const existingRuleIds = existingRules.map(rule => rule.id);
     
-    // 更新会话规则
-    await chrome.declarativeNetRequest.updateSessionRules(
-      declarativeNetRequestRules
-    );
+    if (existingRuleIds.length > 0) {
+      // 如果有现有规则，先移除
+      await chrome.declarativeNetRequest.updateSessionRules({
+        removeRuleIds: existingRuleIds
+      });
+    }
+    
+    // 添加新规则
+    await chrome.declarativeNetRequest.updateSessionRules({
+      addRules: declarativeNetRequestRules
+    });
     
     console.log('会话规则安装成功！');
   } catch (error) {
     console.error('安装会话规则失败:', error);
+    console.error('错误详情:', error.stack);
   }
 }
 
@@ -184,9 +193,9 @@ async function replayRequest(requestId) {
   try {
     // 准备请求配置
     const headers = { ...requestInfo.headers } || {};
-    // 删除 Origin 头，让浏览器自动处理
-    delete headers['origin'];
-    delete headers['Origin'];
+    // // 删除 Origin 头，让浏览器自动处理
+    // delete headers['origin'];
+    // delete headers['Origin'];
     
     const fetchOptions = {
       method: requestInfo.method,
@@ -195,7 +204,7 @@ async function replayRequest(requestId) {
       mode: 'cors',          // 尝试跨域请求
       cache: 'no-cache',     // 不使用缓存
       redirect: 'follow',    // 自动跟随重定向
-      referrerPolicy: 'no-referrer' // 不发送 origin
+      // referrerPolicy: 'no-referrer' // 不发送 origin
     };
     
     // 添加请求体
@@ -261,6 +270,11 @@ chrome.webRequest.onBeforeRequest.addListener(
       console.log(`URL: ${details.url}`);
       console.log(`方法: ${details.method}`);
       console.log(`时间戳: ${new Date(details.timeStamp).toLocaleString()}`);
+      console.log(`Origin: ${details.origin}`);
+      console.log(`Referer: ${details.referrer}`);
+      console.log(`Tab ID: ${details.tabId}`);
+      console.log(`Headers: ${details.headers}`);
+      
       
       // 处理并显示请求体
       if (details.requestBody) {
@@ -273,7 +287,8 @@ chrome.webRequest.onBeforeRequest.addListener(
           url: details.url,
           method: details.method,
           timeStamp: details.timeStamp,
-          body: extractRequestBodyForReplay(details.requestBody)
+          body: extractRequestBodyForReplay(details.requestBody),
+          headers: details.headers,
         });
       }
       
