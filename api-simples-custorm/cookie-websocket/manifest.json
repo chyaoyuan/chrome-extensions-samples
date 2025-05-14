@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Cookie WebSocket Monitor",
+  "version": "1.0",
+  "description": "Monitor cookie changes and reconnect WebSocket",
+  "permissions": [
+    "cookies",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
